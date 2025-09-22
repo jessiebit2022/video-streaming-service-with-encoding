@@ -1,0 +1,115 @@
+version: '3.8'
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:6.0
+    container_name: vidiox-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: vidiox
+    volumes:
+      - mongodb_data:/data/db
+      - ./scripts/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    networks:
+      - vidiox-network
+
+  # Redis Cache
+  redis:
+    image: redis:7.0-alpine
+    container_name: vidiox-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - vidiox-network
+
+  # API Server
+  api:
+    build:
+      context: ./backend/api
+      dockerfile: Dockerfile
+    container_name: vidiox-api
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - MONGODB_URI=mongodb://admin:password@mongodb:27017/vidiox?authSource=admin
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - VIDEO_PROCESSOR_URL=http://video-processor:5000
+      - UPLOAD_DIR=/app/uploads
+    volumes:
+      - ./backend/api:/app
+      - api_uploads:/app/uploads
+      - /app/node_modules
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - vidiox-network
+    command: npm run dev
+
+  # Video Processing Service
+  video-processor:
+    build:
+      context: ./backend/video-processor
+      dockerfile: Dockerfile
+    container_name: vidiox-video-processor
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=development
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    volumes:
+      - ./backend/video-processor:/app
+      - video_uploads:/tmp/uploads
+      - video_processed:/tmp/processed
+    depends_on:
+      - redis
+    networks:
+      - vidiox-network
+    command: python app.py
+
+  # Frontend (Development)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: vidiox-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:3001
+      - CHOKIDAR_USEPOLLING=true
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - api
+    networks:
+      - vidiox-network
+    command: npm start
+
+volumes:
+  mongodb_data:
+  redis_data:
+  api_uploads:
+  video_uploads:
+  video_processed:
+
+networks:
+  vidiox-network:
+    driver: bridge

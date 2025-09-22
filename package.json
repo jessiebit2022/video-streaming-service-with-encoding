@@ -1,0 +1,45 @@
+{
+  "name": "vidiox",
+  "version": "1.0.0",
+  "description": "Video Streaming Service with Encoding - A mini-Netflix/YouTube project",
+  "author": "Jessie Borras <jesse@jessiedev.xyz>",
+  "website": "https://jessiedev.xyz",
+  "license": "MIT",
+  "scripts": {
+    "dev": "docker-compose up -d",
+    "dev:logs": "docker-compose logs -f",
+    "stop": "docker-compose down",
+    "build": "docker-compose build",
+    "clean": "docker-compose down -v --rmi all",
+    "frontend": "cd frontend && npm start",
+    "api": "cd backend/api && npm run dev",
+    "processor": "cd backend/video-processor && python app.py",
+    "setup": "npm run setup:frontend && npm run setup:api && npm run setup:processor",
+    "setup:frontend": "cd frontend && npm install",
+    "setup:api": "cd backend/api && npm install",
+    "setup:processor": "cd backend/video-processor && pip install -r requirements.txt",
+    "test": "npm run test:frontend && npm run test:api",
+    "test:frontend": "cd frontend && npm test",
+    "test:api": "cd backend/api && npm test"
+  },
+  "keywords": [
+    "video",
+    "streaming",
+    "encoding",
+    "ffmpeg",
+    "react",
+    "nodejs",
+    "python",
+    "mongodb",
+    "redis",
+    "docker"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/vidiox.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/vidiox/issues"
+  },
+  "homepage": "https://github.com/yourusername/vidiox#readme"
+}
